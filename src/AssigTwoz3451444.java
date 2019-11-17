@@ -165,18 +165,25 @@ public class AssigTwoz3451444 {
 					// Initialize
 					String curNode = item._1;
 					List<Tuple2<String,Integer>> newAdjList = new ArrayList<Tuple2<String,Integer>>();
-					List<String> newPath = new ArrayList<String>();
+					List<String> newPathList = new ArrayList<String>();
 					
 					// Set initial path and copy adjacent list
-//					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator_1 = item._2().iterator();
-//					while(routesIterator_1.hasNext()) {
-//						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator_1.next();
-//						Iterator<Tuple2<String,Integer>> adjIterator = curRoute._3().iterator();
-//						
-//						while (adjIterator.hasNext()) {
-//							newAdjList.add(adjIterator.next());
-//						}
-//					}
+					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator_1 = item._2().iterator();
+					while(routesIterator_1.hasNext()) {
+						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator_1.next();
+						Iterator<Tuple2<String,Integer>> adjIterator = curRoute._3().iterator();
+						Iterator<String> pathIterator = curRoute._2().iterator();
+						if(adjIterator.hasNext()) { // Copy adjacent list
+							while (adjIterator.hasNext()) {
+								newAdjList.add(adjIterator.next());
+							}
+							while (pathIterator.hasNext()) {
+								newPathList.add(pathIterator.next());
+							}
+							break;
+						}	
+					}
+					
 					// Update shortest distance and path if exist
 					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator = item._2().iterator();
 					int shortestDist = Integer.MAX_VALUE;
@@ -190,19 +197,26 @@ public class AssigTwoz3451444 {
 							// Update shortest distance
 							shortestDist = curDist;
 							// Update path
-							newPath = new ArrayList<String>();
+							newPathList = new ArrayList<String>();
 							while(curPathIterator.hasNext())
-								newPath.add(curPathIterator.next());
+								newPathList.add(curPathIterator.next());
 						}
 					}
 					
 					return new Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>(
 							curNode, new Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>(
-									shortestDist,newPath,newAdjList));
+									shortestDist,newPathList,newAdjList));
 				});
 		//DEBUG Print iteration 1 output
 		System.out.println("After iteration 1:");
 		EmitPairsAfterIter.collect().forEach(System.out::println);
 	}
-
+	
+	public static void Emit() {
+		
+	}
+	
+	public static void UpdateShortestRoute() {
+		
+	}
 }

@@ -110,6 +110,20 @@ public class AssigTwoz3451444 {
 		System.out.println("Final inputs with path and adj list");
 		inputWithPathAndAdjList.collect().forEach(System.out::println);
 		
+		// Iteration
+		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> updatedRoutes = inputWithPathAndAdjList;
+		for (int i=0;i< numberOfNodes;i++) {
+			updatedRoutes = IterateOnceToUpdateShortestRoute(updatedRoutes);
+			
+			//DEBUG Print iteration 1 output
+			System.out.println("After iteration " + Integer.toString(i+1) +":");
+			updatedRoutes.collect().forEach(System.out::println);
+		}
+	}
+	
+	public static JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>
+	IterateOnceToUpdateShortestRoute (JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> 
+	inputWithPathAndAdjList) {
 		// Transformation: Emit
 		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> emittedPairs =
 				inputWithPathAndAdjList.flatMapToPair(item -> {
@@ -151,7 +165,6 @@ public class AssigTwoz3451444 {
 		emittedPairs.collect().forEach(System.out::println);
 		
 		// Action: Group by current node name
-		
 		JavaPairRDD<String,Iterable<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>> groupedEmitPairs = 
 				emittedPairs.groupByKey();
 		
@@ -207,16 +220,7 @@ public class AssigTwoz3451444 {
 							curNode, new Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>(
 									shortestDist,newPathList,newAdjList));
 				});
-		//DEBUG Print iteration 1 output
-		System.out.println("After iteration 1:");
-		EmitPairsAfterIter.collect().forEach(System.out::println);
-	}
-	
-	public static void Emit() {
 		
-	}
-	
-	public static void UpdateShortestRoute() {
-		
+		return EmitPairsAfterIter;
 	}
 }

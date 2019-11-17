@@ -158,6 +158,51 @@ public class AssigTwoz3451444 {
 		//DEBUG Print after grouping the emit pairs
 		System.out.println("Group by cur node of emitted pairs:");
 		groupedEmitPairs.collect().forEach(System.out::println);
+		
+		// Transform: Find shortest distance
+		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> EmitPairsAfterIter = 
+				groupedEmitPairs.mapToPair(item -> {
+					// Initialize
+					String curNode = item._1;
+					List<Tuple2<String,Integer>> newAdjList = new ArrayList<Tuple2<String,Integer>>();
+					List<String> newPath = new ArrayList<String>();
+					
+					// Set initial path and copy adjacent list
+//					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator_1 = item._2().iterator();
+//					while(routesIterator_1.hasNext()) {
+//						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator_1.next();
+//						Iterator<Tuple2<String,Integer>> adjIterator = curRoute._3().iterator();
+//						
+//						while (adjIterator.hasNext()) {
+//							newAdjList.add(adjIterator.next());
+//						}
+//					}
+					// Update shortest distance and path if exist
+					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator = item._2().iterator();
+					int shortestDist = Integer.MAX_VALUE;
+					
+					
+					while(routesIterator.hasNext()) {
+						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator.next();
+						int curDist = curRoute._1();
+						Iterator<String> curPathIterator = curRoute._2().iterator();
+						if (curDist < shortestDist) {
+							// Update shortest distance
+							shortestDist = curDist;
+							// Update path
+							newPath = new ArrayList<String>();
+							while(curPathIterator.hasNext())
+								newPath.add(curPathIterator.next());
+						}
+					}
+					
+					return new Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>(
+							curNode, new Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>(
+									shortestDist,newPath,newAdjList));
+				});
+		//DEBUG Print iteration 1 output
+		System.out.println("After iteration 1:");
+		EmitPairsAfterIter.collect().forEach(System.out::println);
 	}
 
 }

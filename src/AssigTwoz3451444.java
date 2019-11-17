@@ -125,7 +125,7 @@ public class AssigTwoz3451444 {
 		}
 		
 		// Print result
-		PrintShortestPath(updatedRoutes,init_start_node,numberOfNodes,output_path);
+		PrintShortestPath(updatedRoutes,init_start_node,output_path);
 	}
 	
 	public static JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>
@@ -232,11 +232,7 @@ public class AssigTwoz3451444 {
 	}
 	
 	public static void PrintShortestPath(JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> 
-	inputWithPathAndAdjList, String startNode, int numberOfNodes, String filePath) throws Exception {
-		// TODO Find if there is missing nodes (May not be necessary)
-//		List<String> nodeNameList = Arrays.asList(FileUtils.readFileToString(new File(NodeSummaryFilePath)).split(","));
-//		nodeNameList.remove(startNode);
-		
+	inputWithPathAndAdjList, String startNode, String filePath) throws Exception {
 		// Remove start node
 		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> filteredResult = 
 				inputWithPathAndAdjList.filter(item -> (!item._1.equals(startNode)));
@@ -284,6 +280,7 @@ public class AssigTwoz3451444 {
 			}
 			if (outputFile.length() != 0) // create a new line
 				FileUtils.writeStringToFile(outputFile, System.lineSeparator(), true);
+			
 			// Write a line to file
 			FileUtils.writeStringToFile(outputFile, outputLine, true);
 		});

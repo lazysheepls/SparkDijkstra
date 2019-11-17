@@ -111,12 +111,12 @@ public class AssigTwoz3451444 {
 		inputWithPathAndAdjList.collect().forEach(System.out::println);
 		
 		// Transformation: Emit
-		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> emiitedPairs =
+		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> emittedPairs =
 				inputWithPathAndAdjList.flatMapToPair(item -> {
 					// Add current item to the emitted pairs list
-					List<Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>> emittedPairs =
+					List<Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>> localEmittedPairs =
 						new ArrayList<Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>>();
-					emittedPairs.add(item);
+					localEmittedPairs.add(item);
 					// Iterate through adjacent nodes
 					String curNode = item._1;
 					int curDist = item._2._1();
@@ -142,13 +142,22 @@ public class AssigTwoz3451444 {
 						Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> newlyEmiitedPair =
 								new Tuple2<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>(adjNode,
 										new Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>(updatedDist,updatedPath,emptyAdjList));
-						emittedPairs.add(newlyEmiitedPair);
+						localEmittedPairs.add(newlyEmiitedPair);
 					}
-					return emittedPairs.iterator();
+					return localEmittedPairs.iterator();
 				});
 		//DEBUG Print after emit
 		System.out.println("After emittion:");
-		emiitedPairs.collect().forEach(System.out::println);
+		emittedPairs.collect().forEach(System.out::println);
+		
+		// Action: Group by current node name
+		
+		JavaPairRDD<String,Iterable<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>> groupedEmitPairs = 
+				emittedPairs.groupByKey();
+		
+		//DEBUG Print after grouping the emit pairs
+		System.out.println("Group by cur node of emitted pairs:");
+		groupedEmitPairs.collect().forEach(System.out::println);
 	}
 
 }

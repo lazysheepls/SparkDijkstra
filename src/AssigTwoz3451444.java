@@ -1,7 +1,9 @@
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +21,8 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 public class AssigTwoz3451444 {
+	
+	public static final String NodeSummaryFilePath = "TEMP/nodeSummary.txt";
 
 	public static void main(String[] args) throws Exception{
 		SparkConf conf = new SparkConf().setMaster("local").setAppName("Ass2");
@@ -60,7 +64,7 @@ public class AssigTwoz3451444 {
 		});
 		
 		// Get total number of nodes and their names
-		File tempFile = new File("TEMP/temp.txt");
+		File tempFile = new File(NodeSummaryFilePath);
 		FileUtils.touch(tempFile);
 		inputPairs.foreach(pair -> {
 			String curNode = pair._1;
@@ -119,6 +123,9 @@ public class AssigTwoz3451444 {
 			System.out.println("After iteration " + Integer.toString(i+1) +":");
 			updatedRoutes.collect().forEach(System.out::println);
 		}
+		
+		// Print result
+		PrintShortestPath(updatedRoutes,init_start_node,numberOfNodes,output_path);
 	}
 	
 	public static JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>
@@ -222,5 +229,63 @@ public class AssigTwoz3451444 {
 				});
 		
 		return EmitPairsAfterIter;
+	}
+	
+	public static void PrintShortestPath(JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> 
+	inputWithPathAndAdjList, String startNode, int numberOfNodes, String filePath) throws Exception {
+		// TODO Find if there is missing nodes (May not be necessary)
+//		List<String> nodeNameList = Arrays.asList(FileUtils.readFileToString(new File(NodeSummaryFilePath)).split(","));
+//		nodeNameList.remove(startNode);
+		
+		// Remove start node
+		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> filteredResult = 
+				inputWithPathAndAdjList.filter(item -> (!item._1.equals(startNode)));
+		
+		// Restructure data
+		JavaPairRDD<Integer,Tuple2<String,Iterable<String>>> restructedResult = filteredResult.mapToPair(item -> {
+			String curNode = item._1();
+			int distance = item._2()._1();
+			Iterable<String> path = item._2()._2();
+			Tuple2<String,Iterable<String>> curNodeAndPath = new Tuple2<String,Iterable<String>>(curNode,path);
+			return new Tuple2<Integer,Tuple2<String,Iterable<String>>>(distance, curNodeAndPath);
+		});
+		
+		// Sort by distance
+		JavaPairRDD<Integer,Tuple2<String,Iterable<String>>> sortedResult = restructedResult.sortByKey(true);
+		
+		//DEBUG After Sort (*Note: Change max int to -1 at the very end)
+		System.out.println("After restructure and sort");
+		sortedResult.collect().forEach(System.out::println);
+		
+		// Write to file
+		File outputFile = new File(filePath);
+		FileUtils.touch(outputFile);
+		
+		sortedResult.foreach(item -> {
+			String curNode = item._2._1();
+			int distance = item._1;
+			Iterator<String> pathIterator = item._2._2().iterator();
+			String outputLine = "";
+			
+			outputLine += curNode;
+			outputLine +=",";
+			if (distance == Integer.MAX_VALUE) {
+				outputLine += "-1";
+			}	
+			else {
+				outputLine += Integer.toString(distance);
+				outputLine += ",";
+				if(pathIterator.hasNext()) //first node in path
+					outputLine += pathIterator.next();
+				while(pathIterator.hasNext()) {
+					outputLine += "-";
+					outputLine += pathIterator.next();
+				}
+			}
+			if (outputFile.length() != 0) // create a new line
+				FileUtils.writeStringToFile(outputFile, System.lineSeparator(), true);
+			// Write a line to file
+			FileUtils.writeStringToFile(outputFile, outputLine, true);
+		});
 	}
 }

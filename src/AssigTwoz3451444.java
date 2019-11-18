@@ -36,7 +36,7 @@ public class AssigTwoz3451444 {
 		JavaSparkContext context = new JavaSparkContext(conf);
 		JavaRDD<String> inputRDD = context.textFile(input_path);
 
-		//Delete old folders if exist
+		// Delete old folders if exist
 		File temp_folder_to_delete = new File("TEMP");
 		if(temp_folder_to_delete.exists()) {
 			FileUtils.cleanDirectory(temp_folder_to_delete);
@@ -56,14 +56,26 @@ public class AssigTwoz3451444 {
 		//DEBUG Print Raw inputs
 		System.out.println("Start node: " + init_start_node);
 		
-		// Transformation 1: input RDD to a list of string
+		/**
+		 * Transformation: input RDD to pairs
+		 * 1. Split input string by delimiter ","
+		 * 2. Map to pair with format <starting node, <end node, distance>>
+		 * */
 		JavaPairRDD<String,Tuple2<String,Integer>> inputPairs = inputRDD.mapToPair(line -> {
 			String[] items = line.split(",");
 			Tuple2<String, Integer> destAndDistPair = new Tuple2<String, Integer>(items[1], Integer.parseInt(items[2]));
 			return new Tuple2<String,Tuple2<String,Integer>>(items[0],destAndDistPair);
 		});
 		
-		// Get total number of nodes and their names
+		/**
+		 * Get total number of nodes in the graph
+		 * Purpose: this number is later used as the number of iteration
+		 * 1. Create temporary file "TEMP/nodeSummary.txt" to store node names
+		 * 2. Iterate through inputPairs JavaPairRDD to find "starting node" and "end node"
+		 * 3. Store node name into temporary file if it not stored before, separate by delimiter ","
+		 * 4. After iteration, read temporary file into string and store into a list splitting by ","
+		 * 5. Number of nodes is the size of the list
+		 * */
 		File tempFile = new File(NodeSummaryFilePath);
 		FileUtils.touch(tempFile);
 		inputPairs.foreach(pair -> {
@@ -89,14 +101,24 @@ public class AssigTwoz3451444 {
 		System.out.println("Pairs after first transformation.");
 		inputPairs.collect().forEach(System.out::println);
 		
-		// Action: Group input by current nodes
+		/**
+		 * Action: Group by key to create adjacent list
+		 * Key is the "Starting node" from the inputPairs JavaPairRDD
+		 * */
 		JavaPairRDD<String,Iterable<Tuple2<String,Integer>>> inputWithAdjList = inputPairs.groupByKey();
 		
 		//DEBUG Print group outputs
 		System.out.println("Group input pairs by key.");
 		inputWithAdjList.collect().forEach(System.out::println);
 		
-		// Transformation: Add path and distance to start node
+		/**
+		 * Transformation: Restructure input, add initial path and distance information
+		 * Expected output format <current node, <distance, path list, adjacent list>
+		 * To initialize the new structure: 
+		 * - If node is not the init start node -> set distance to infinite (max integer)
+		 * - If node is the init start node -> set distance to 0
+		 * - Add current node to the path list to initialize the path list
+		 * */
 		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> inputWithPathAndAdjList = 
 				inputWithAdjList.mapToPair(item -> {
 					String curNode = item._1;
@@ -115,6 +137,7 @@ public class AssigTwoz3451444 {
 		inputWithPathAndAdjList.collect().forEach(System.out::println);
 		
 		// Iteration
+		/***/
 		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> updatedRoutes = inputWithPathAndAdjList;
 		for (int i=0;i< numberOfNodes;i++) {
 			updatedRoutes = IterateOnceToUpdateShortestRoute(updatedRoutes);

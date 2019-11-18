@@ -59,13 +59,6 @@ public class AssigTwoz3451444 {
 			FileUtils.deleteDirectory(output_folder_to_delete);
 		}
 		
-		//DEBUG Remove warning info
-		Logger.getLogger("org").setLevel(Level.OFF);
-		Logger.getLogger("INFO").setLevel(Level.OFF);
-		
-		//DEBUG Print Raw inputs
-		System.out.println("Start node: " + init_start_node);
-		
 		/**
 		 * Transformation: input RDD to pairs
 		 * 1. Split input string by delimiter ","
@@ -106,20 +99,11 @@ public class AssigTwoz3451444 {
 		});
 		int numberOfNodes = Arrays.asList(FileUtils.readFileToString(tempFile).split(",")).size();
 		
-		//DEBUG Print input pair
-		System.out.println("Total number of nodes: " + Integer.toString(numberOfNodes));
-		System.out.println("Pairs after first transformation.");
-		inputPairs.collect().forEach(System.out::println);
-		
 		/**
 		 * Action: Group by key to create adjacent list
 		 * Key is the "Starting node" from the inputPairs JavaPairRDD
 		 * */
 		JavaPairRDD<String,Iterable<Tuple2<String,Integer>>> inputWithAdjList = inputPairs.groupByKey();
-		
-		//DEBUG Print group outputs
-		System.out.println("Group input pairs by key.");
-		inputWithAdjList.collect().forEach(System.out::println);
 		
 		/**
 		 * Transformation: Restructure input, add initial path and distance information
@@ -142,10 +126,6 @@ public class AssigTwoz3451444 {
 									distFromStartToCurNode,path,adjacentList));
 				});
 		
-		//DEBUG Print final inputs
-		System.out.println("Final inputs with path and adj list");
-		inputWithPathAndAdjList.collect().forEach(System.out::println);
-		
 		/**
 		 * Iteration: Find shortest path
 		 * After each iteration, the shortest path will be updated. 
@@ -156,10 +136,6 @@ public class AssigTwoz3451444 {
 		JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> updatedRoutes = inputWithPathAndAdjList;
 		for (int i=0;i< numberOfNodes-1;i++) {
 			updatedRoutes = IterateOnceToUpdateShortestRoute(updatedRoutes);
-			
-			//DEBUG Print iteration 1 output
-			System.out.println("After iteration " + Integer.toString(i+1) +":");
-			updatedRoutes.collect().forEach(System.out::println);
 		}
 		
 		/**
@@ -219,9 +195,6 @@ public class AssigTwoz3451444 {
 					}
 					return localEmittedPairs.iterator();
 				});
-		//DEBUG Print after emit
-		System.out.println("After emittion:");
-		emittedPairs.collect().forEach(System.out::println);
 		
 		/**
 		 * 2. Group by current node: 
@@ -229,10 +202,6 @@ public class AssigTwoz3451444 {
 		 * */
 		JavaPairRDD<String,Iterable<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>>> groupedEmitPairs = 
 				emittedPairs.groupByKey();
-		
-		//DEBUG Print after grouping the emit pairs
-		System.out.println("Group by cur node of emitted pairs:");
-		groupedEmitPairs.collect().forEach(System.out::println);
 		
 		/**
 		 * 3. Find shortest distance and update path if exist
@@ -318,10 +287,6 @@ public class AssigTwoz3451444 {
 		 * 3. Sort result by distance in ascending order
 		 * */
 		JavaPairRDD<Integer,Tuple2<String,Iterable<String>>> sortedResult = restructedResult.sortByKey(true);
-		
-		//DEBUG After Sort (*Note: Change max int to -1 at the very end)
-		System.out.println("After restructure and sort");
-		sortedResult.collect().forEach(System.out::println);
 		
 		/**
 		 * 4. Write each line to file

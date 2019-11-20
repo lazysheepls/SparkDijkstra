@@ -1,17 +1,10 @@
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -22,7 +15,7 @@ import scala.Tuple3;
 /**
  * Executive Summary
  * 1. Read from input file
- * 2. Process input content and map to <starting node, <end node, distance>> format
+ * 2. Process input content and map to <starting node, <end node, distance>> format (MapToPair)
  * 3. Get total number of nodes (used to determine number of iteration needed)
  * 4. Group by key to create adjacent list for each node (GroupByKey)
  * 5. Restructure input format to add path list and distance (MapToPair)
@@ -41,10 +34,6 @@ public class AssigTwoz3451444 {
 		String init_start_node = args[0];
 		String input_path = args[1];
 		String output_path = args[2];
-		
-		// Create RDD from file
-		JavaSparkContext context = new JavaSparkContext(conf);
-		JavaRDD<String> inputRDD = context.textFile(input_path);
 
 		// Delete old folders if exist
 		File temp_folder_to_delete = new File("TEMP");
@@ -58,6 +47,13 @@ public class AssigTwoz3451444 {
 			FileUtils.cleanDirectory(output_folder_to_delete);
 			FileUtils.deleteDirectory(output_folder_to_delete);
 		}
+		
+		// Create RDD from file
+		/**
+		 * Process input file
+		 * */
+		JavaSparkContext context = new JavaSparkContext(conf);
+		JavaRDD<String> inputRDD = context.textFile(input_path);
 		
 		/**
 		 * Transformation: input RDD to pairs
@@ -185,6 +181,7 @@ public class AssigTwoz3451444 {
 						while(curPathIterator.hasNext())
 							updatedPath.add(curPathIterator.next());
 						updatedPath.add(adjNode);
+						
 						// Add emitted item to the mapping output
 						Iterable<Tuple2<String,Integer>> emptyAdjList = 
 								new ArrayList<Tuple2<String,Integer>>();
@@ -215,6 +212,7 @@ public class AssigTwoz3451444 {
 					
 					// Set initial path and copy adjacent list (Same across all possible routes)
 					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator_1 = item._2().iterator();
+					
 					while(routesIterator_1.hasNext()) {
 						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator_1.next();
 						Iterator<Tuple2<String,Integer>> adjIterator = curRoute._3().iterator();
@@ -231,12 +229,12 @@ public class AssigTwoz3451444 {
 					}
 					
 					// Initialize before iterating through all possible routes to find the shortest route
-					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator = item._2().iterator();
+					Iterator<Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> routesIterator_2 = item._2().iterator();
 					int shortestDist = Integer.MAX_VALUE;
 					
 					
-					while(routesIterator.hasNext()) {
-						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator.next();
+					while(routesIterator_2.hasNext()) {
+						Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>> curRoute = routesIterator_2.next();
 						int curDist = curRoute._1();
 						Iterator<String> curPathIterator = curRoute._2().iterator();
 						if (curDist < shortestDist) {

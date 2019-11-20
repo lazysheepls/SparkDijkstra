@@ -24,8 +24,6 @@ import scala.Tuple3;
  * 7. Sort result in ascending order and write to output file
  * */
 public class AssigTwoz3451444 {
-	
-	public static final String NodeSummaryFilePath = "TEMP/nodeSummary.txt";
 
 	public static void main(String[] args) throws Exception{
 		SparkConf conf = new SparkConf().setMaster("local").setAppName("Ass2");
@@ -34,13 +32,6 @@ public class AssigTwoz3451444 {
 		String init_start_node = args[0];
 		String input_path = args[1];
 		String output_path = args[2];
-
-		// Delete old folders if exist
-		File temp_folder_to_delete = new File("TEMP");
-		if(temp_folder_to_delete.exists()) {
-			FileUtils.cleanDirectory(temp_folder_to_delete);
-			FileUtils.deleteDirectory(temp_folder_to_delete);
-		}
 		
 		File output_folder_to_delete = new File("output");
 		if(output_folder_to_delete.exists()) {
@@ -48,7 +39,6 @@ public class AssigTwoz3451444 {
 			FileUtils.deleteDirectory(output_folder_to_delete);
 		}
 		
-		// Create RDD from file
 		/**
 		 * Process input file
 		 * */
@@ -69,31 +59,21 @@ public class AssigTwoz3451444 {
 		/**
 		 * Get total number of nodes in the graph
 		 * Purpose: this number is later used as the number of iteration
-		 * 1. Create temporary file "TEMP/nodeSummary.txt" to store node names
-		 * 2. Iterate through inputPairs JavaPairRDD to find "starting node" and "end node"
-		 * 3. Store node name into temporary file if it not stored before, separate by delimiter ","
-		 * 4. After iteration, read temporary file into string and store into a list splitting by ","
-		 * 5. Number of nodes is the size of the list
+		 * 1. Read each line of the input, add both "starting node" and "destination node" to the allNodeNamesRDD (flatMap)
+		 * 2. Remove duplicated names and save distinct node names into nodeNameList
+		 * 3. Number of nodes is the count of nodeNamesListRDD
 		 * */
-		File tempFile = new File(NodeSummaryFilePath);
-		FileUtils.touch(tempFile);
-		inputPairs.foreach(pair -> {
-			String curNode = pair._1;
-			String destNode = pair._2._1;
-			List<String> nodeNames = Arrays.asList(FileUtils.readFileToString(tempFile).split(","));
-			if (!nodeNames.contains(curNode)) {
-				if (tempFile.length()!=0) 
-					FileUtils.writeStringToFile(tempFile,",",true);
-				FileUtils.writeStringToFile(tempFile,curNode,true);
-			} 
-				
-			if (curNode != destNode && !nodeNames.contains(destNode)) {
-				if (tempFile.length()!=0) 
-					FileUtils.writeStringToFile(tempFile,",",true);
-				FileUtils.writeStringToFile(tempFile,destNode,true);
-			}
+		JavaRDD<String> allNodeNamesRDD = inputPairs.flatMap(item ->{
+			String curNode = item._1;
+			String destNode = item._2._1;
+			List<String> nodeNamesList = new ArrayList<String>();
+			nodeNamesList.add(curNode);
+			nodeNamesList.add(destNode);
+			return nodeNamesList.iterator();
 		});
-		int numberOfNodes = Arrays.asList(FileUtils.readFileToString(tempFile).split(",")).size();
+		
+		JavaRDD<String> distinctNodeNamesRDD = allNodeNamesRDD.distinct();
+		int numberOfNodes = (int) distinctNodeNamesRDD.count();
 		
 		/**
 		 * Action: Group by key to create adjacent list
@@ -258,9 +238,10 @@ public class AssigTwoz3451444 {
 	/**
 	 * Function: Save result to the output file
 	 * 1. Remove initial start node from the result
-	 * 2. Restructure the result: Set distance as key
-	 * 3. Sort result in ascending order by distance (key in the restructured result)
-	 * 4. Iterate through the sorted result, write each line to file and set isolated node's distance to -1
+	 * 2. Restructure the result: Set distance as key (MapToPair)
+	 * 3. Sort result in ascending order by distance (GroupByKey)
+	 * 4. Map sorted result into a list of formatted string (Map)
+	 * 5. Save to user defined output path
 	 * */
 	public static void PrintShortestPath(JavaPairRDD<String,Tuple3<Integer,Iterable<String>,Iterable<Tuple2<String,Integer>>>> 
 	inputWithPathAndAdjList, String startNode, String filePath) throws Exception {
@@ -287,12 +268,9 @@ public class AssigTwoz3451444 {
 		JavaPairRDD<Integer,Tuple2<String,Iterable<String>>> sortedResult = restructedResult.sortByKey(true);
 		
 		/**
-		 * 4. Write each line to file
+		 * 4. Format the string and map to resultRDD
 		 * */
-		File outputFile = new File(filePath);
-		FileUtils.touch(outputFile);
-		
-		sortedResult.foreach(item -> {
+		JavaRDD<String> resultRDD = sortedResult.map(item -> {
 			String curNode = item._2._1();
 			int distance = item._1;
 			Iterator<String> pathIterator = item._2._2().iterator();
@@ -313,11 +291,12 @@ public class AssigTwoz3451444 {
 					outputLine += pathIterator.next();
 				}
 			}
-			if (outputFile.length() != 0) // create a new line
-				FileUtils.writeStringToFile(outputFile, System.lineSeparator(), true);
-			
-			// Write a line to file
-			FileUtils.writeStringToFile(outputFile, outputLine, true);
+			return outputLine;
 		});
+		
+		/**
+		 * 5. Write to file
+		 * */
+		resultRDD.saveAsTextFile(filePath);
 	}
 }
